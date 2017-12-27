@@ -16,6 +16,8 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import jade.util.leap.LinkedList;
+
 
 public class Main_00 {
 
@@ -28,17 +30,25 @@ public class Main_00 {
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		ArrayList<String> id_comunidades = new ArrayList<String>();
+		Hashtable<String,LinkedList> comunidades_table = new Hashtable<String, LinkedList>();
+		comunidades_table= aemetAgent();
 		
-		 id_comunidades= aemetAgent();
-		 enclaveAgent(comunidadAutonoma(id_comunidades));
-
-
+		for(String comunidad_key : comunidades_table.keySet()) {
+			LinkedList stations_list = new LinkedList();
+			stations_list = comunidades_table.get(comunidad_key);
+			
+			for(int i=0; i<stations_list.size(); i++) {
+				System.out.println(stations_list.get(i).toString());
+			}
+				
+		} 
+		
 	}
 
 	
-	private static ArrayList<String> aemetAgent() {
-		ArrayList <String> id_comunidad = new ArrayList<String>();
+	private static Hashtable<String, LinkedList> aemetAgent() {
+		Hashtable<String, String>comunidades_table = new Hashtable<String, String>();
+		Hashtable<String, LinkedList>comunidades_stations_table = new Hashtable<String, LinkedList>();
 		System.out.println("\\nAGENTE AEMET\n---------------------");
 		try{
 			Document doc = Jsoup.connect(AEMET + ID_CC_AA_DIR).get();
@@ -47,12 +57,17 @@ public class Main_00 {
 			
 			Elements comunidades = doc.select("option:not(option[selected])");
 			for(Element comunidad: comunidades ) {
-				System.out.println(comunidad.attr("value"));
-				id_comunidad.add(comunidad.attr("value"));
+				//System.out.println(comunidad.attr("value")+" --> " + comunidad.text());
+				comunidades_table.put(comunidad.attr("value"), comunidad.text());
 			}
-
+			LinkedList weatherStation_list = new LinkedList();
 			
-			return id_comunidad;
+			for (String comunidad_key : comunidades_table.keySet()) {
+				weatherStation_list = comunidadAutonoma(comunidad_key, comunidades_table.get(comunidad_key));
+				comunidades_stations_table.put(comunidad_key, weatherStation_list);
+			}
+			
+			return comunidades_stations_table;
 			
 		}catch(Exception e){
 			System.out.println("Exception "+e);
@@ -61,81 +76,83 @@ public class Main_00 {
 		
 	}
 	
-	private static String comunidadAutonoma(ArrayList<String> comunidadees_list) {
-		String provincia = "";
-		String localidad = "";
-		String url_localidad = "";
-		ArrayList<String> localidad_list = new ArrayList<String>();
-		Hashtable<String, ArrayList<String>> provicias_table = new Hashtable<String, ArrayList<String>>();
+	private static LinkedList comunidadAutonoma(String comunidad_key, String comunidad_name) {
+		String url_enclave = "";
 		
+		Hashtable<String,String> localidades_table = new Hashtable<String,String>();
+		Hashtable<String, Hashtable<String,String>> provincias_table = new Hashtable<String, Hashtable<String,String>>();
+		LinkedList weatherStation_list = new LinkedList(); 
+	
+		String url_comunidad = AEMET + ULTIMOS_DATOS + "?k="+ comunidad_key +"&w=0";
 		
-		String url_comunidad = AEMET + ULTIMOS_DATOS + "?k="+ comunidadees_list.get(0)+"&w=0";
-		
-		System.out.println("\nAGENTE C.C.A.A.\n---------------------");
-		System.out.println(url_comunidad);
+//		System.out.println("\nAGENTE C.C.A.A.\n---------------------");
 		try{
 			Document doc = Jsoup.connect(url_comunidad).get();
 			
+			provincias_table.clear();
 			Elements provincias = doc.select("form[name=\"frm1\"] optgroup");
-			for(Element elem_provincia: provincias) {
-				provincia = elem_provincia.attr("label");
-				System.out.println(provincia);
-				
-				localidad_list.clear();
-				Elements localidades = doc.select("form[name=\"frm1\"] optgroup[label=\"" + provincia + "\"] option");
-				for(Element elem_localidad: localidades) {
-					localidad = elem_localidad.attr("value");
-					System.out.println("\t" + localidad);
-					localidad_list.add(localidad);
-				}
-				provicias_table.put(provincia, localidad_list);
-			}
 			
-			url_localidad = AEMET + ULTIMOS_DATOS + "?k="+ comunidadees_list.get(0) +
-										"&l=" + provicias_table.get(provincia).get(0) + "&w=0&datos=img&x=h24&f=temperatura";
-			System.out.println(url_localidad);
-					
+			for(Element elem_provincia: provincias) {
+				String provincia = elem_provincia.attr("label");
+				
+				localidades_table.clear();
+				Elements localidades = doc.select("form[name=\"frm1\"] optgroup[label=\"" + provincia + "\"] option");
+				
+				for(Element elem_localidad: localidades) {	
+					String id_localidad = elem_localidad.attr("value");
+					String localidad = elem_localidad.text();
+		
+					localidades_table.put(id_localidad, localidad);
+				}
+				
+				provincias_table.put(provincia, localidades_table);
+				
+				for(String localidad_key : provincias_table.get(provincia).keySet()) {
+					url_enclave = AEMET + ULTIMOS_DATOS + "?k="+ comunidad_key +
+										"&l=" + localidad_key + "&w=0&datos=img&x=h24&f=Todas";
+					String localidad = provincias_table.get(provincia).get(localidad_key);
+//					System.out.println(comunidad_key + ", " + provincia + ", " + localidad);
+//					System.out.println(url_enclave);
+					Location loc =  new Location();
+					loc = enclaveAgent(url_enclave);
+//					System.out.println("\t Lat: " + loc.getLatitude() + " / Long: "+ loc.getLongitude());
+					weatherStation_list.add(new WeatherStation(comunidad_key, comunidad_name, provincia, localidad_key, localidad, loc));
+				}
+				
+			}
+				
 		}catch(Exception e){
 			System.out.println("Exception "+e);
 		}
-		return url_localidad;
+		
+		return weatherStation_list;	
 	}
 	
 	
-	private static void enclaveAgent(String url_link) {
+	private static Location enclaveAgent(String url_enclave) {		
+		Double latitude = null;
+		Double longitude = null;
 		
-		/**
-		String url_localidad = AEMET + ULTIMOS_DATOS + "?k="+ comunidadees_list.get(0) +
-				"&l=" + provicias_table.get(provincia).get(0) + "&w=0&datos=img&x=h24&f=temperatura";
-		**/
-		
-		String latitud = "";
-		String longitude = "";
-		
-		
-		String url_enclave = url_link;
-		
-		System.out.println("\nAGENTE ENCLAVE\n---------------------");
-		System.out.println(url_enclave);
+//		System.out.println("\nAGENTE ENCLAVE\n---------------------");
 		try{
 			Document doc = Jsoup.connect(url_enclave).get();
 			
 			Elements latitudes = doc.select(".latitude");
 			for(Element elem_latitud: latitudes) {
-				latitud = elem_latitud.attr("title");
-				System.out.println("\t\tLatitud: " + latitud);
+				latitude = Double.parseDouble(elem_latitud.attr("title"));
 			}
 			
 			
 			Elements longitudes = doc.select(".longitude");
 			for(Element elem_longitudes: longitudes) {
-				longitude = elem_longitudes.attr("title");
-				System.out.println("\t\tLongitud: " + longitude);
+				longitude = Double.parseDouble(elem_longitudes.attr("title"));
 			}
 			
 		}catch(Exception e){
 			System.out.println("Exception "+e);
 		}
+		
+		return new Location(latitude,longitude);
 	}
 	
 }
