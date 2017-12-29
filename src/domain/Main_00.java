@@ -3,7 +3,6 @@
  */
 package domain;
 
-import java.util.ArrayList;
 import java.util.Hashtable;
 
 /**
@@ -17,6 +16,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import jade.util.leap.LinkedList;
+import view.MainFrame;
 
 
 public class Main_00 {
@@ -30,7 +30,9 @@ public class Main_00 {
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
+
 		Hashtable<String,LinkedList> comunidades_table = new Hashtable<String, LinkedList>();
+
 		comunidades_table= aemetAgent();
 		
 		for(String comunidad_key : comunidades_table.keySet()) {
@@ -42,7 +44,9 @@ public class Main_00 {
 			}
 				
 		} 
-		
+
+		MainFrame mf = new MainFrame(this);
+		mf.setInfo(comunidades_table);
 	}
 
 	
@@ -55,7 +59,7 @@ public class Main_00 {
 			
 			Elements form = doc.select("form[name=\"frm1\"]");
 			
-			Elements comunidades = doc.select("option:not(option[selected])");
+			Elements comunidades = form.select("option:not(option[selected])");
 			for(Element comunidad: comunidades ) {
 				//System.out.println(comunidad.attr("value")+" --> " + comunidad.text());
 				comunidades_table.put(comunidad.attr("value"), comunidad.text());

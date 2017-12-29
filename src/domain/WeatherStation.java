@@ -1,6 +1,8 @@
 package domain;
 
-public class WeatherStation {
+import java.io.Serializable;
+
+public class WeatherStation implements Serializable{
 
 	private String id_comnunidad_autonoma;
 	private String comunidad_autonoma;
@@ -9,6 +11,9 @@ public class WeatherStation {
 	private String enclave_name;
 	private Location location;
 	
+	public WeatherStation() {
+		
+	}
 	/**
 	 * @param id_comnunidad_autonoma
 	 * @param comunidad_autonoma
