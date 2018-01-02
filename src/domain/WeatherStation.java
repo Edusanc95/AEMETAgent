@@ -10,10 +10,12 @@ public class WeatherStation implements Serializable{
 	private String id_enclave;
 	private String enclave_name;
 	private Location location;
+	private WeatherInformation weather_information;
 	
 	public WeatherStation() {
 		
 	}
+
 	/**
 	 * @param id_comnunidad_autonoma
 	 * @param comunidad_autonoma
@@ -21,9 +23,10 @@ public class WeatherStation implements Serializable{
 	 * @param id_enclave
 	 * @param enclave_name
 	 * @param location
+	 * @param weather_information
 	 */
 	public WeatherStation(String id_comnunidad_autonoma, String comunidad_autonoma, String provincia, String id_enclave,
-			String enclave_name, Location location) {
+			String enclave_name, Location location, WeatherInformation weather_information) {
 		super();
 		this.id_comnunidad_autonoma = id_comnunidad_autonoma;
 		this.comunidad_autonoma = comunidad_autonoma;
@@ -31,7 +34,10 @@ public class WeatherStation implements Serializable{
 		this.id_enclave = id_enclave;
 		this.enclave_name = enclave_name;
 		this.location = location;
+		this.weather_information = weather_information;
 	}
+
+
 
 
 	// --- Getters and Setters ---
@@ -130,6 +136,19 @@ public class WeatherStation implements Serializable{
 		this.location = location;
 	}
 
+	/**
+	 * @return the weather_information
+	 */
+	public WeatherInformation getWeather_information() {
+		return weather_information;
+	}
+
+	/**
+	 * @param weather_information the weather_information to set
+	 */
+	public void setWeather_information(WeatherInformation weather_information) {
+		this.weather_information = weather_information;
+	}
 
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
@@ -138,7 +157,7 @@ public class WeatherStation implements Serializable{
 	public String toString() {
 		return "WeatherStation [id_comnunidad_autonoma=" + id_comnunidad_autonoma + ", comunidad_autonoma="
 				+ comunidad_autonoma + ", provincia=" + provincia + ", id_enclave=" + id_enclave + ", enclave_name="
-				+ enclave_name + ", location=" + location + "]";
+				+ enclave_name + ", location=" + location + ", weather_information=" + weather_information + "]";
 	}
 	 
 }
