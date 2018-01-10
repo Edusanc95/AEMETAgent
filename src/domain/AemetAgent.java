@@ -21,7 +21,6 @@ import jade.proto.AchieveREInitiator;
  *
  */
 public class AemetAgent extends Agent {	
-	private Hashtable<String,LinkedList> comunidades_table;
 	protected MainFrame mf;
 	protected Boolean inicio;
 	
@@ -48,14 +47,16 @@ public class AemetAgent extends Agent {
 		
 		this.addBehaviour(new BuscarInformacion(this, msg_peticion));
 		
+		
 	}
 	
 	
 	private class ListarComunidades extends OneShotBehaviour{
 		
+		
 		public ListarComunidades(Agent agente) {
 			super(agente);
-			comunidades_table = new Hashtable<String, LinkedList>();
+			
 		}
 		@Override
 		public void action() {
@@ -88,27 +89,37 @@ public class AemetAgent extends Agent {
 	//Comportamiento que solicita información al resto de agentes 
 	private class BuscarInformacion extends AchieveREInitiator{
 		
+		
 		public BuscarInformacion(Agent agente, ACLMessage aclmsg) {
 			super(agente, aclmsg);
 		}
 		
 		protected void handleAgree(ACLMessage agree) {
 			System.out.println("Se ha aceptado");
+			mf.mostrarMensaje("Buscando datos.", true);
+			
 		}
 		
 		protected void handleRefuse(ACLMessage refuse) {
 			System.out.println("Se ha rechazado");
+			mf.mostrarMensaje("Se ha rechazado la petición.", false);
 		}
 		
 		protected void handleNotUnderstood(ACLMessage not_understood) {
 			System.out.println("No se ha comprendido el mensaje");
+			mf.mostrarMensaje("Ha ocurrido algún problema con la recogida de datos.", false);
 		}
 		
 		protected void handleInform(ACLMessage inform) {
 			System.out.println("Información del servicio");
 			try {
+				Hashtable<String,LinkedList> comunidades_table = new  Hashtable<String, LinkedList>();
+				
 				comunidades_table = (Hashtable<String, LinkedList>) inform.getContentObject();
+				mf.mostrarMensaje("Se han obtenido los datos.", true);
 				mf.setInfo(comunidades_table);
+				
+				removeBehaviour(this);
 			} catch (UnreadableException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -117,6 +128,9 @@ public class AemetAgent extends Agent {
 		
 		protected void handleFailure(ACLMessage fail) {
 			System.out.println("Fallo en la petición");
+			mf.mostrarMensaje("Fallo en la petición", false);
 		}
+		
+		
 	}
 }

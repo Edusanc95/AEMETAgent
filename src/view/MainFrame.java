@@ -14,6 +14,8 @@ import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,6 +24,7 @@ import java.io.InputStreamReader;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.WindowConstants;
 
 import domain.AemetAgent;
@@ -37,13 +40,23 @@ import java.util.Hashtable;
 import java.util.List;
 
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JSeparator;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+
 import java.awt.Component;
 import java.awt.ComponentOrientation;
+
+import javax.swing.AbstractAction;
+import javax.swing.AbstractButton;
 import javax.swing.DefaultComboBoxModel;
 import java.awt.Dimension;
+import java.awt.Window;
+import java.awt.Dialog.ModalityType;
 
 public class MainFrame {
 	private Hashtable<String, LinkedList> local_comunidades_table;
@@ -51,25 +64,18 @@ public class MainFrame {
 	protected String seleccion;
 	final Browser browser;
 	private String html;
-	
-	public static final int MIN_ZOOM = 0;
-	public static final int MAX_ZOOM = 21;
-	/**
-	 * In map.html file default zoom value is set to 4.
-	 */
-	
-	
-	
-	private static int zoomValue = 4;
 	private JButton setMarkerButton;
 	private BrowserView view;
 	private JFrame frmInformacinEstacionesAemet;
 	private JPanel toolBar;
 	private JLabel lblZona;
 	private JComboBox<String> comboBox;
-	private JSeparator separator;
+	private AemetAgent aemetAgent;
+	private ShowWaitAction showWaitAction;
+    private JDialog dialog;
 
-	public MainFrame(AemetAgent aemetAgent) {
+	public MainFrame(AemetAgent agent) {
+		aemetAgent = agent;
 		local_comunidades_table = new Hashtable<String,LinkedList>();
 		local_comunidades_name_table = new Hashtable<String, String>();
 		seleccion = "Todo";
@@ -95,19 +101,8 @@ public class MainFrame {
 		comboBox.setAlignmentX(Component.LEFT_ALIGNMENT);
 		toolBar.add(comboBox);
 		
-				setMarkerButton = new JButton("Buscar");
-				setMarkerButton.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent e) {
-						String filtro = seleccionCombo();
-						//browser.loadHTML(html);
-						aemetAgent.BuscarInformacionEstaciones(filtro);
-					}		
-				});
-				toolBar.add(setMarkerButton);
-		
-		separator = new JSeparator();
-		separator.setOrientation(SwingConstants.VERTICAL);
-		toolBar.add(separator);
+		setMarkerButton = new JButton(new ShowWaitAction("Mostrar", aemetAgent));				
+		toolBar.add(setMarkerButton);
 
 		frmInformacinEstacionesAemet = new JFrame();
 		frmInformacinEstacionesAemet.setResizable(false);
@@ -150,8 +145,11 @@ public class MainFrame {
 	public void setInfo(Hashtable<String, LinkedList> info_table) {
 		local_comunidades_table = info_table; 
 		generarMarcas(local_comunidades_table);
+        dialog.dispose();
 		view.setEnabled(true);
 		frmInformacinEstacionesAemet.setEnabled(true);
+		
+
 		
 		
 	}
@@ -170,7 +168,7 @@ public class MainFrame {
 					ws.setWeather_information(wi);
 				}
 				
-				browser.executeJavaScript("var contentString = '<div id=\"content\">'+\n" + 
+				browser.executeJavaScript("var contentString_"+ ws.getId_enclave() +" = '<div id=\"content\">'+\n" + 
 						"      '<div id=\"siteNotice\">'+\n" + 
 						"      '</div>'+\n" + 
 						"      '<h1 id=\"firstHeading\" class=\"firstHeading\">" + ws.getComunidad_autonoma() + ", " + ws.getProvincia() + ", " + ws.getEnclave_name() + "</h1>'+\n" + 
@@ -180,7 +178,7 @@ public class MainFrame {
 						"      '<tr><td><p><b>Velocidad viento: </b></td><td>" + ws.getWeather_information().getVelocidad_viento() + "</td></tr>'+\n" + 
 						"      '<tr><td><p><b>Dirección viento: </b></td><td>"+ ws.getWeather_information().getDir_viento() + " <img src=\""+ ws.getWeather_information().getDir_viento_img() + "\" /></td></tr>'+\n" +
 						"      '<tr><td><p><b>Racha: </b></td><td>"+ ws.getWeather_information().getRacha()+"</td></tr>'+\n" + 
-						"      '<tr><td><p><b>Dirección racha: </b></td><td>"+ ws.getWeather_information().getDir_racha()+" <img src=\"http://www.aemet.es/imagenes/png/iconos_viento_udat/O.png\" /></td></tr>'+\n" +
+						"      '<tr><td><p><b>Dirección racha: </b></td><td>"+ ws.getWeather_information().getDir_racha()+" <img src=\""+ ws.getWeather_information().getDir_racha_img() + "\" /></td></tr>'+\n" +
 						"      '<tr><td><p><b>Precipitaciones (mm): </b></td><td>"+ ws.getWeather_information().getPrecipitacion()+"</td></tr>'+\n" +
 						"      '<tr><td><p><b>Presión (hPa): </b></td><td>"+ ws.getWeather_information().getPresion()+"</td></tr>'+\n" + 
 						"      '<tr><td><p><b>Tendencia (hPa): </b></td><td>"+ ws.getWeather_information().getTendencia()+"</td></tr>'+\n" + 
@@ -189,20 +187,21 @@ public class MainFrame {
 						"      '</div>'+\n" + 
 						"      '</div>';\n" + 
 						"\n" + 
-						"  var infowindow = new google.maps.InfoWindow({\n" + 
-						"    content: contentString,\n" + 
+						"  var infowindow_"+ ws.getId_enclave() +" = new google.maps.InfoWindow({\n" + 
+						"    content: contentString_"+ ws.getId_enclave() +",\n" + 
 						"    maxWidth: 350\n" + 
 						"  });\n" + 
 						"var myLatlng = new google.maps.LatLng(" + String.valueOf(ws.getLocation().getLatitude()) + "," + String.valueOf(ws.getLocation().getLongitude()) +");\n" +
-						"var marker = new google.maps.Marker({\n" +
+						"var marker_"+ ws.getId_enclave() +" = new google.maps.Marker({\n" +
 						"    position: myLatlng,\n" +
 						"    map: map,\n" +
 						"    title: '"+  ws.getEnclave_name() +"'\n" +
 						"  });\n" + 
-						"marker.addListener('click', function() {\n" +
-						"    infowindow.open(map, marker);\n" + 
+						
+						"marker_"+ ws.getId_enclave() +".addListener('click', function() {\n" +
+						"    infowindow_"+ ws.getId_enclave() +".open(map, marker_"+ ws.getId_enclave() +");\n" + 
 						"});");
-			}	
+			}
 		}
 	}
 
@@ -217,5 +216,66 @@ public class MainFrame {
 		local_comunidades_name_table.put("all", "Todo");
 		view.setEnabled(true);
 		frmInformacinEstacionesAemet.setEnabled(true);
+	}
+
+
+	class ShowWaitAction extends AbstractAction {
+		   protected Object obj;
+		   
+		   public ShowWaitAction(String name, Object obj) {
+		      super(name);
+		      this.obj = obj;
+		   }
+	
+		   @Override
+		   public void actionPerformed(ActionEvent evt) {
+		      SwingWorker<Void, Void> mySwingWorker = new SwingWorker<Void, Void>(){
+		         @Override
+		         protected Void doInBackground() throws Exception {
+					browser.loadHTML(html); 	
+		        	aemetAgent.BuscarInformacionEstaciones(seleccionCombo());
+		            return null;
+		         }
+		      };
+	
+		      Window win = SwingUtilities.getWindowAncestor((AbstractButton)evt.getSource());
+		      dialog = new JDialog(win, "Recopilando datos", ModalityType.APPLICATION_MODAL);
+	
+		      mySwingWorker.addPropertyChangeListener(new PropertyChangeListener() {
+	
+		         @Override
+		         public void propertyChange(PropertyChangeEvent evt) {
+		            if (evt.getPropertyName().equals("state")) {
+		               if (evt.getNewValue() == SwingWorker.StateValue.DONE) {
+
+		               }
+		            }
+		         }
+		      });
+		      mySwingWorker.execute();
+	
+		      JProgressBar progressBar = new JProgressBar();
+		      progressBar.setIndeterminate(true);
+		      JPanel panel = new JPanel(new BorderLayout());
+		      panel.add(progressBar, BorderLayout.CENTER);
+		      panel.add(new JLabel("Recopilando datos ..."), BorderLayout.PAGE_START);
+		      dialog.getContentPane().add(panel);
+		      dialog.pack();
+		      dialog.setLocationRelativeTo(win);
+		      dialog.setVisible(true);
+		   }
+	}
+
+
+	public void mostrarMensaje(String mensaje, boolean exito) {
+		if (exito) {
+			dialog.setTitle(mensaje);
+		}
+		else {
+			JOptionPane.showMessageDialog(null, mensaje, "No se pudo obrtener la informacióin", JOptionPane.ERROR_MESSAGE);
+			browser.loadHTML(html);
+			dialog.dispose();
+		}
+		
 	}
 }
