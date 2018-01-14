@@ -4,6 +4,9 @@
 package domain;
 
 import java.util.Hashtable;
+
+import javax.swing.JOptionPane;
+
 import jade.util.leap.LinkedList;
 import view.MainFrame;
 
@@ -22,7 +25,6 @@ import jade.proto.AchieveREInitiator;
  */
 public class AemetAgent extends Agent {	
 	protected MainFrame mf;
-	protected Boolean inicio;
 	
 	@Override
 	protected void setup() {
@@ -35,7 +37,7 @@ public class AemetAgent extends Agent {
 		doDelete();	
 	}
 	
-	public void BuscarInformacionEstaciones(String objetivo) {
+	public void buscarInformacionEstaciones(String objetivo) {
 		AID id_comunidadAgente = new AID("ComunidadAutonomaAgent", AID.ISLOCALNAME);
 
 		//Pedir información al agente de la Comunidad Autónoma (ComunidadAutonomaAgent)
@@ -50,10 +52,13 @@ public class AemetAgent extends Agent {
 		
 	}
 	
+	public void listarComunidades() {
+		this.addBehaviour(new ListarComunidades(this));
+	}
+	
 	
 	private class ListarComunidades extends OneShotBehaviour{
-		
-		
+				
 		public ListarComunidades(Agent agente) {
 			super(agente);
 			
@@ -76,6 +81,7 @@ public class AemetAgent extends Agent {
 				try {
 					mf.setComunidades((Hashtable<String, String>)resp_comunidades.getContentObject());
 				} catch (UnreadableException e) {
+					
 					e.printStackTrace();
 				}
 			}

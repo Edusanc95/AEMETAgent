@@ -2,6 +2,12 @@ package domain;
 
 import java.io.Serializable;
 
+/**
+ * @author Sergio Fernandez Garcia
+ * @author Eduardo Sanchez Lopez
+ *
+ */
+
 public class Location implements Serializable{
 
 	private Double latitude;

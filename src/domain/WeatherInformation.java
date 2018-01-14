@@ -6,9 +6,11 @@ package domain;
 import java.io.Serializable;
 
 /**
- * @author sergio
+ * @author Sergio Fernandez Garcia
+ * @author Eduardo Sanchez Lopez
  *
  */
+
 public class WeatherInformation implements Serializable {
 	
 	private String fecha_hora;

@@ -11,15 +11,17 @@ import org.jsoup.select.Elements;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
-import jade.core.behaviours.SimpleBehaviour;
 import jade.domain.FIPANames;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import jade.lang.acl.UnreadableException;
-import jade.proto.AchieveREInitiator;
 import jade.proto.AchieveREResponder;
 import jade.util.leap.LinkedList;
-import view.MainFrame;
+
+/**
+ * @author Sergio Fernandez Garcia
+ * @author Eduardo Sanchez Lopez
+ *
+ */
 
 public class ComunidadAutonomaAgent extends Agent {
 	
@@ -64,19 +66,16 @@ public class ComunidadAutonomaAgent extends Agent {
 					for(Element comunidad: comunidades ) {
 						comunidades_table.put(comunidad.attr("value"), comunidad.text());
 					}
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				ACLMessage res = msg.createReply();
-				try {
+					ACLMessage res = msg.createReply();
 					res.setContentObject(comunidades_table);
+					send(res);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-				send(res);
-				
+				finally {
+					ACLMessage res = msg.createReply();
+					send(res);
+				}
 			}
 			else{
 				block();

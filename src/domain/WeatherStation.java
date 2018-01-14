@@ -2,6 +2,12 @@ package domain;
 
 import java.io.Serializable;
 
+/**
+ * @author Sergio Fernandez Garcia
+ * @author Eduardo Sanchez Lopez
+ *
+ */
+
 public class WeatherStation implements Serializable{
 
 	private String id_comnunidad_autonoma;

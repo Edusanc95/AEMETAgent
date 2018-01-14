@@ -13,6 +13,12 @@ import jade.core.behaviours.*;
 import jade.lang.acl.ACLMessage;
 import jade.util.leap.LinkedList;
 
+/**
+ * @author Sergio Fernandez Garcia
+ * @author Eduardo Sanchez Lopez
+ *
+ */
+
 public class EnclaveAgent extends Agent {
 		
 	protected void setup() {

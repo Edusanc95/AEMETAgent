@@ -1,17 +1,11 @@
 package view;
 
-import com.teamdev.jxbrowser.chromium.Browser;
-import com.teamdev.jxbrowser.chromium.events.FailLoadingEvent;
-import com.teamdev.jxbrowser.chromium.events.FinishLoadingEvent;
-import com.teamdev.jxbrowser.chromium.events.FrameLoadEvent;
-import com.teamdev.jxbrowser.chromium.events.LoadAdapter;
-import com.teamdev.jxbrowser.chromium.events.LoadEvent;
-import com.teamdev.jxbrowser.chromium.events.LoadListener;
-import com.teamdev.jxbrowser.chromium.events.ProvisionalLoadingEvent;
-import com.teamdev.jxbrowser.chromium.events.StartLoadingEvent;
-import com.teamdev.jxbrowser.chromium.swing.BrowserView;
-
 import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.ComponentOrientation;
+import java.awt.Dialog.ModalityType;
+import java.awt.Dimension;
+import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
@@ -20,43 +14,35 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Hashtable;
 
+import javax.swing.AbstractAction;
+import javax.swing.AbstractButton;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import javax.swing.WindowConstants;
+
+import com.teamdev.jxbrowser.chromium.Browser;
+import com.teamdev.jxbrowser.chromium.swing.BrowserView;
 
 import domain.AemetAgent;
 import domain.WeatherInformation;
 import domain.WeatherStation;
-import jade.util.leap.Collection;
 import jade.util.leap.LinkedList;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Hashtable;
-import java.util.List;
-
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JSeparator;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
-
-import java.awt.Component;
-import java.awt.ComponentOrientation;
-
-import javax.swing.AbstractAction;
-import javax.swing.AbstractButton;
-import javax.swing.DefaultComboBoxModel;
-import java.awt.Dimension;
-import java.awt.Window;
-import java.awt.Dialog.ModalityType;
+/**
+ * @author Sergio Fernandez Garcia
+ * @author Eduardo Sanchez Lopez
+ *
+ */
 
 public class MainFrame {
 	private Hashtable<String, LinkedList> local_comunidades_table;
@@ -199,20 +185,27 @@ public class MainFrame {
 						"  });\n" + 
 						
 						"marker_"+ ws.getId_enclave() +".addListener('click', function() {\n" +
-						"    infowindow_"+ ws.getId_enclave() +".open(map, marker_"+ ws.getId_enclave() +");\n" + 
+						"    if (window.currentInfoWindow != null) { \n" +
+						"        window.currentInfoWindow.close();\n" +
+						"    }\n" +
+						"    infowindow_"+ ws.getId_enclave() +".open(map, marker_"+ ws.getId_enclave() +");\n" +
+						"    window.currentInfoWindow = infowindow;\n" + 
 						"});");
 			}
 		}
 	}
 
 	public void setComunidades(Hashtable<String,String> comunidades_table) {
-		local_comunidades_name_table = comunidades_table;
 		comboBox.addItem("Todo");
-		
-		for(String value: comunidades_table.keySet()) {
-			comboBox.addItem(comunidades_table.get(value));
+		if (comunidades_table != null){
+			local_comunidades_name_table = comunidades_table;
+			
+			for(String value: comunidades_table.keySet()) {
+				comboBox.addItem(comunidades_table.get(value));
+			}
+		}else {
+			mostrarMensaje("No se pudo obtener la información requerida.", false);
 		}
-		
 		local_comunidades_name_table.put("all", "Todo");
 		view.setEnabled(true);
 		frmInformacinEstacionesAemet.setEnabled(true);
@@ -232,14 +225,21 @@ public class MainFrame {
 		      SwingWorker<Void, Void> mySwingWorker = new SwingWorker<Void, Void>(){
 		         @Override
 		         protected Void doInBackground() throws Exception {
-					browser.loadHTML(html); 	
-		        	aemetAgent.BuscarInformacionEstaciones(seleccionCombo());
+		        	browser.loadHTML(html);
+					
+					if (comboBox.getItemCount() == 1) {
+						aemetAgent.listarComunidades();
+					}
+		        	aemetAgent.buscarInformacionEstaciones(seleccionCombo());
+		        	
 		            return null;
 		         }
 		      };
 	
 		      Window win = SwingUtilities.getWindowAncestor((AbstractButton)evt.getSource());
 		      dialog = new JDialog(win, "Recopilando datos", ModalityType.APPLICATION_MODAL);
+		      dialog.setUndecorated(true);
+		      
 	
 		      mySwingWorker.addPropertyChangeListener(new PropertyChangeListener() {
 	
@@ -272,9 +272,9 @@ public class MainFrame {
 			dialog.setTitle(mensaje);
 		}
 		else {
-			JOptionPane.showMessageDialog(null, mensaje, "No se pudo obrtener la informacióin", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(null, mensaje, "No se pudo obtener la información", JOptionPane.ERROR_MESSAGE);
 			browser.loadHTML(html);
-			dialog.dispose();
+			if (dialog!= null) dialog.dispose();
 		}
 		
 	}
